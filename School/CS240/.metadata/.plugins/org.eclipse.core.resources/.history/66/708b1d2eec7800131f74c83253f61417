@@ -1,0 +1,50 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.Scanner;
+
+
+public class ImageEditor {
+	
+	public static void main(String args[]){
+		
+		String effect = args[2];
+		if(effect.equals("grayscale")){
+			System.out.println("Run Grayscale");
+		}
+		else if(effect.equals("invert")){
+			System.out.println("Run Invert");
+		}
+		else if(effect.equals("emboss")){
+			System.out.println("Run Emboss");
+		}
+		else if(effect.equals("motionblur")){
+			System.out.println("Run Motion");
+		}
+		
+		Scanner inputFile = null;
+		int counter = 0;
+		Integer width = null;
+		try {
+			System.out.println(args[0]);
+		    inputFile = new Scanner(new BufferedReader(new FileReader(args[0])));
+		    
+		    while(inputFile.hasNext()){
+				String in = inputFile.next();
+				if(in.equals("#")){
+					System.out.println(inputFile.nextLine());
+				}
+				if(!in.equals("P3") && width == null){
+					int width2 = Integer.parseInt(in);
+					System.out.println(width);
+				}
+			}
+		    
+		} catch (FileNotFoundException fe) {
+		    System.out.println("File not found!");
+		}
+		
+		
+	}
+
+}

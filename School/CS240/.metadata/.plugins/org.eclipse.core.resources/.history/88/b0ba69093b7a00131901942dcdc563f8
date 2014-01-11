@@ -1,0 +1,231 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+
+public class ImageEditor {
+	
+	public static Pixel[][] image = new Pixel[1][1];
+	
+	public static void main(String args[]){
+		
+		if(!validateArgs(args)){
+			System.out.println("USAGE: java ImageEditor in-file out-file (grayscale|invert|emboss|motionblur motion-blur-length)");
+			return;
+		}
+		
+		parsePPM(args);
+//		printPixels();
+		runEffect(args);	
+		compilePPM(args);
+		
+	}
+	
+	public static void runEffect(String args[]){
+		String effect = args[2];
+		if(effect.equals("grayscale")){
+			System.out.println("Run Grayscale");
+			grayScalePixels();
+		}
+		else if(effect.equals("invert")){
+			System.out.println("Run Invert");
+			invertPixels();
+		}
+		else if(effect.equals("emboss")){
+			System.out.println("Run Emboss");
+			embossPixels();
+		}
+		else if(effect.equals("motionblur")){
+			System.out.println("Run MotionBlur " + args[3]);
+			motionBlur(Integer.parseInt(args[3]));
+		}
+		printPixels();
+	}
+	
+	public static void compilePPM(String args[]) throws IOException{
+		System.out.println("PPM saved!");
+		FileWriter writer = new FileWriter(args[1]);
+		for(int i = 0; i < image.length; i++){
+			for(int i2= 0; i2 < image[i].length; i2++){
+			writer.write(image[i][i2].getRed() + "\n");
+			writer.write(image[i][i2].getGreen() + "\n");
+			writer.write(image[i][i2].getBlue() + "\n");
+
+			}
+		}
+	}
+	
+	public static void motionBlur(int blur){
+		System.out.println("Blur " + blur);
+		for(int i = 0; i < image.length; i++){
+			for(int i2= 0; i2 < image[i].length; i2++){
+				//Blur code here
+				int averageRed = 0;
+				int averageGreen = 0;
+				int averageBlue = 0;
+				int counter = 0;
+				for(int i3 = i2; i3 < i2 + (blur - 1); i3++){
+					int y = i3;
+					if(i3 >= image[i].length){
+						y = image[i].length - 1;
+					}
+					averageRed += image[i][y].getRed();
+					averageGreen += image[i][y].getGreen();
+					averageBlue += image[i][y].getBlue();
+					counter++;
+				}
+				averageRed = averageRed/counter;
+				averageGreen = averageGreen/counter;
+				averageBlue = averageBlue/counter;
+				
+				image[i][i2].setRed(averageRed);
+				image[i][i2].setGreen(averageGreen);
+				image[i][i2].setBlue(averageBlue);
+			}
+		}
+	}
+	
+	public static void embossPixels(){
+		for(int i = 0; i < image.length; i++){
+			for(int i2= 0; i2 < image[i].length; i2++){
+				int v = 128;
+				if((i -1) > 0 && (i2 -1) > 0){
+					int redDiff = image[i][i2].getRed() - image[i-1][i2-1].getRed();
+					int greenDiff = image[i][i2].getRed() - image[i-1][i2-1].getGreen();
+					int blueDiff = image[i][i2].getRed() - image[i-1][i2-1].getBlue();
+					
+					if(Math.abs(redDiff) >= Math.abs(greenDiff) && Math.abs(redDiff) >= Math.abs(blueDiff)){
+						v = redDiff + 128;
+					}
+					else if(Math.abs(greenDiff) >= Math.abs(redDiff) && Math.abs(greenDiff) >= Math.abs(blueDiff)){
+						v = greenDiff + 128;
+					}
+					else if(Math.abs(greenDiff) >= Math.abs(redDiff) && Math.abs(greenDiff) >= Math.abs(blueDiff)){
+						v = blueDiff + 128;
+					}
+					if(v > 255){
+						v = 255;
+					}
+					else if(v < 0){
+						v = 0;
+					}
+				}
+				image[i][i2].setAll(v);
+			}
+		}
+	}
+	
+	public static void invertPixels(){
+		for(int i = 0; i < image.length; i++){
+			for(int i2= 0; i2 < image[i].length; i2++){
+				image[i][i2].invert();
+			}
+		}
+	}
+	
+	public static void grayScalePixels(){
+		for(int i = 0; i < image.length; i++){
+			for(int i2= 0; i2 < image[i].length; i2++){
+				image[i][i2].grayScale();
+			}
+		}
+	}
+	
+	public static void printPixels(){
+		for(int i = 0; i < image.length; i++){
+			for(int i2= 0; i2 < image[i].length; i2++){
+				image[i][i2].printPixel();
+			}
+		}
+	}
+	
+	public static void parsePPM(String args[]){
+		Scanner inputFile = null;
+		int width = 0;
+		int height = 0;
+		int row = 0;
+		int col = 0;
+		int pixelCounter = 0;
+		int r = 0;
+		int g = 0;
+		int b = 0;
+	
+		try {
+		    inputFile = new Scanner(new BufferedReader(new FileReader(args[0])));
+		    int state = 0;
+		    
+		    while(inputFile.hasNext()){
+				String in = inputFile.next();
+				if(in.equals("#")){
+					inputFile.nextLine();
+				}else {
+					if(state == 1){
+						width = Integer.parseInt(in);
+					}else if(state == 2) {
+						height = Integer.parseInt(in);
+						image = new Pixel[width][height];
+					}else if(state >= 4){
+						if(pixelCounter == 0){
+							r = Integer.parseInt(in);
+							pixelCounter++;
+						}
+						else if(pixelCounter == 1){
+							g = Integer.parseInt(in);
+							pixelCounter++;
+						}
+						else if(pixelCounter == 2){
+							b = Integer.parseInt(in);
+							Pixel pixel = new Pixel(r,g,b);
+							image[row][col] = pixel;
+							col++;
+							if(col >= width){
+								col = 0;
+								row++;
+							}
+							pixelCounter = 0;
+						}
+					}
+					state++;
+				}
+			}
+		    
+		} catch (FileNotFoundException fe) {
+		    System.out.println("USAGE: java ImageEditor in-file out-file (grayscale|invert|emboss|motionblur motion-blur-length)");
+		}
+	}
+	
+	public static boolean isInteger(String s) {
+	    try { 
+	        Integer.parseInt(s); 
+	    } catch(NumberFormatException e) { 
+	        return false; 
+	    }
+	    // only got here if we didn't return false
+	    return true;
+	}
+	
+	public static boolean validateArgs(String args[]){
+		boolean validArgs = true;
+		if(args.length >= 3){
+			if(!args[2].equals("grayscale") && !args[2].equals("invert") && !args[2].equals("emboss") && !args[2].equals("motionblur")){
+				validArgs = false;
+			}
+			if(args[2].equals("motionblur")){
+				if(args.length != 4){
+					validArgs = false;
+				}
+				else if(!isInteger(args[3])){
+					validArgs = false;
+				}
+			}
+		}
+		else{
+			validArgs = false;
+		}
+		return validArgs;
+	}
+
+}
